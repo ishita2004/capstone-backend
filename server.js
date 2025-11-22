@@ -1,5 +1,4 @@
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import axios from "axios";
@@ -14,7 +13,7 @@ const upload = multer();
 // ✅ Enable CORS globally
 app.use(
   cors({
-    origin: "*", // you can restrict to ["http://localhost:3000"] later
+    origin: "*",
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
@@ -22,10 +21,10 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Auth Routes
+// ✅ Auth Routes (Make sure they don't use Mongo)
 app.use("/api/auth", authRoutes);
 
-// ✅ Proxy route: sends file + genre to Hugging Face model
+// ✅ Proxy route to Hugging Face API
 app.post("/api/transform", upload.single("file"), async (req, res) => {
   try {
     if (!req.file || !req.body.genre) {
@@ -39,9 +38,7 @@ app.post("/api/transform", upload.single("file"), async (req, res) => {
     const response = await axios.post(
       "https://arjun9036-script-writer-api.hf.space/generate-script-from-pdf",
       formData,
-      {
-        headers: formData.getHeaders(),
-      }
+      { headers: formData.getHeaders() }
     );
 
     res.json(response.data);
@@ -51,17 +48,12 @@ app.post("/api/transform", upload.single("file"), async (req, res) => {
   }
 });
 
-// ✅ Connect to MongoDB
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+// ------------------------------------------
+// 🚀 Start Server (No MongoDB Needed)
+// ------------------------------------------
 
-mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ Connected to MongoDB");
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-  })
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
